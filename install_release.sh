@@ -12,8 +12,14 @@ echo "$PREBUILT_SERVER_SHA256  scrcpy-server" | sha256sum --check
 
 echo "[scrcpy] Building client..."
 rm -rf "$BUILDDIR"
+if [ -d $CTPREFIX ]
+then
+	MYPREFIX=-Dprefix=$CTPREFIX
+fi
+
+set -x
 meson setup "$BUILDDIR" --buildtype=release --strip -Db_lto=true \
-    -Dprebuilt_server=scrcpy-server
+    -Dprebuilt_server=scrcpy-server $MYPREFIX
 cd "$BUILDDIR"
 ninja
 
