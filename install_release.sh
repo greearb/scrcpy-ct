@@ -12,7 +12,11 @@ echo "$PREBUILT_SERVER_SHA256  scrcpy-server" | sha256sum --check
 
 echo "[scrcpy] Building client..."
 rm -rf "$BUILDDIR"
-if [ -d $CTPREFIX ]
+
+# Only set custom prefix if environment var defined
+# and directory exists
+MYPREFIX=
+if [ ! -z "$CTPREFIX" ] && [ -d $CTPREFIX ]
 then
 	MYPREFIX=-Dprefix=$CTPREFIX
 fi
