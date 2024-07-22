@@ -10,8 +10,8 @@
 struct scrcpy_otg {
     struct sc_usb usb;
     struct sc_aoa aoa;
-    struct sc_hid_keyboard keyboard;
-    struct sc_hid_mouse mouse;
+    struct sc_keyboard_aoa keyboard;
+    struct sc_mouse_aoa mouse;
 
     struct sc_screen_otg screen_otg;
 };
@@ -62,7 +62,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return false;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     atexit(SDL_Quit);
@@ -73,8 +73,8 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
-    struct sc_hid_keyboard *keyboard = NULL;
-    struct sc_hid_mouse *mouse = NULL;
+    struct sc_keyboard_aoa *keyboard = NULL;
+    struct sc_mouse_aoa *mouse = NULL;
     bool usb_device_initialized = false;
     bool usb_connected = false;
     bool aoa_started = false;
@@ -105,10 +105,6 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     usb_device_initialized = true;
 
-    LOGI("USB device: %s (%04x:%04x) %s %s", usb_device.serial,
-         (unsigned) usb_device.vid, (unsigned) usb_device.pid,
-         usb_device.manufacturer, usb_device.product);
-
     ok = sc_usb_connect(&s->usb, usb_device.device, &cbs, NULL);
     if (!ok) {
         goto end;
@@ -121,19 +117,18 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
     aoa_initialized = true;
 
-    bool enable_keyboard =
-        options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
-    bool enable_mouse =
-        options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
+    assert(options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
+        || options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_DISABLED);
+    assert(options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA
+        || options->mouse_input_mode == SC_MOUSE_INPUT_MODE_DISABLED);
 
-    // If neither --hid-keyboard or --hid-mouse is passed, enable both
-    if (!enable_keyboard && !enable_mouse) {
-        enable_keyboard = true;
-        enable_mouse = true;
-    }
+    bool enable_keyboard =
+        options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
+    bool enable_mouse =
+        options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
 
     if (enable_keyboard) {
-        ok = sc_hid_keyboard_init(&s->keyboard, &s->aoa);
+        ok = sc_keyboard_aoa_init(&s->keyboard, &s->aoa);
         if (!ok) {
             goto end;
         }
@@ -141,7 +136,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
 
     if (enable_mouse) {
-        ok = sc_hid_mouse_init(&s->mouse, &s->aoa);
+        ok = sc_mouse_aoa_init(&s->mouse, &s->aoa);
         if (!ok) {
             goto end;
         }
@@ -190,10 +185,10 @@ end:
     sc_usb_stop(&s->usb);
 
     if (mouse) {
-        sc_hid_mouse_destroy(&s->mouse);
+        sc_mouse_aoa_destroy(&s->mouse);
     }
     if (keyboard) {
-        sc_hid_keyboard_destroy(&s->keyboard);
+        sc_keyboard_aoa_destroy(&s->keyboard);
     }
 
     if (aoa_initialized) {

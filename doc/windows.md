@@ -4,24 +4,18 @@
 
 Download the [latest release]:
 
- - [`scrcpy-win64-v2.1.zip`][direct-win64] (64-bit)  
-   <sub>SHA-256: `57b98813322c8b5b560ada68714a2cd7b7efe64086fa61d03e389c23212c803d`</sub>
- - [`scrcpy-win32-v2.1.zip`][direct-win32] (32-bit)  
-   <sub>SHA-256: `4d261d391a60ea975440d83cdc22f8250b3c8985f2ece8c7e53d6fb26c0d74ed`</sub>
+ - [`scrcpy-win64-v2.5.zip`][direct-win64] (64-bit)  
+   <sub>SHA-256: `345cf04a66a9144281dce72ca4e82adfd2c3092463196e586051df4c69e1507b`</sub>
+ - [`scrcpy-win32-v2.5.zip`][direct-win32] (32-bit)  
+   <sub>SHA-256: `d56312a92471565fa4f3a6b94e8eb07717c4c90f2c0f05b03ba444e1001806ec`</sub>
 
 [latest release]: https://github.com/Genymobile/scrcpy/releases/latest
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v2.1/scrcpy-win64-v2.1.zip
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v2.1/scrcpy-win32-v2.1.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v2.5/scrcpy-win64-v2.5.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v2.5/scrcpy-win32-v2.5.zip
 
 and extract it.
 
-Alternatively, you could install it from packages manager, like [Winget]:
-
-```bash
-winget install scrcpy
-```
-
-or [Chocolatey]:
+Alternatively, you could install it from packages manager, like [Chocolatey]:
 
 ```bash
 choco install scrcpy

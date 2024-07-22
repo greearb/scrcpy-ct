@@ -6,9 +6,19 @@
 
 #define SC_CONTROL_MSG_QUEUE_MAX 64
 
+static void
+sc_controller_receiver_on_error(struct sc_receiver *receiver, void *userdata) {
+    (void) receiver;
+
+    struct sc_controller *controller = userdata;
+    // Forward the event to the controller listener
+    controller->cbs->on_error(controller, controller->cbs_userdata);
+}
+
 bool
 sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
-                   struct sc_acksync *acksync) {
+                   const struct sc_controller_callbacks *cbs,
+                   void *cbs_userdata) {
     sc_vecdeque_init(&controller->queue);
 
     bool ok = sc_vecdeque_reserve(&controller->queue, SC_CONTROL_MSG_QUEUE_MAX);
@@ -16,7 +26,12 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
         return false;
     }
 
-    ok = sc_receiver_init(&controller->receiver, control_socket, acksync);
+    static const struct sc_receiver_callbacks receiver_cbs = {
+        .on_error = sc_controller_receiver_on_error,
+    };
+
+    ok = sc_receiver_init(&controller->receiver, control_socket, &receiver_cbs,
+                          controller);
     if (!ok) {
         sc_vecdeque_destroy(&controller->queue);
         return false;
@@ -40,7 +55,19 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
     controller->control_socket = control_socket;
     controller->stopped = false;
 
+    assert(cbs && cbs->on_error);
+    controller->cbs = cbs;
+    controller->cbs_userdata = cbs_userdata;
+
     return true;
+}
+
+void
+sc_controller_configure(struct sc_controller *controller,
+                        struct sc_acksync *acksync,
+                        struct sc_uhid_devices *uhid_devices) {
+    controller->receiver.acksync = acksync;
+    controller->receiver.uhid_devices = uhid_devices;
 }
 
 void
@@ -84,7 +111,7 @@ sc_controller_push_msg(struct sc_controller *controller,
 static bool
 process_msg(struct sc_controller *controller,
             const struct sc_control_msg *msg) {
-    static unsigned char serialized_msg[SC_CONTROL_MSG_MAX_SIZE];
+    static uint8_t serialized_msg[SC_CONTROL_MSG_MAX_SIZE];
     size_t length = sc_control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
@@ -118,10 +145,16 @@ run_controller(void *data) {
         sc_control_msg_destroy(&msg);
         if (!ok) {
             LOGD("Could not write msg to socket");
-            break;
+            goto error;
         }
     }
+
     return 0;
+
+error:
+    controller->cbs->on_error(controller, controller->cbs_userdata);
+
+    return 1; // ignored
 }
 
 bool
